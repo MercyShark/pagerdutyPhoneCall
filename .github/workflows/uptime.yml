@@ -1,0 +1,42 @@
+name: Website Uptime Check
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # every 5 minutes (UTC)
+  workflow_dispatch:        # allows manual trigger from the Actions tab
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check website and notify PagerDuty
+        run: |
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" "${{ secrets.WEBSITE_URL }}")
+          echo "Status code: $STATUS"
+
+          DEDUP_KEY="website-monitor-main"
+
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Site appears DOWN — triggering PagerDuty incident"
+            curl -s -X POST https://events.pagerduty.com/v2/enqueue \
+              -H "Content-Type: application/json" \
+              -d '{
+                "routing_key": "${{ secrets.PD_ROUTING_KEY }}",
+                "event_action": "trigger",
+                "dedup_key": "'"$DEDUP_KEY"'",
+                "payload": {
+                  "summary": "Website is DOWN (status '"$STATUS"')",
+                  "severity": "critical",
+                  "source": "github-actions-monitor"
+                }
+              }'
+          else
+            echo "Site is UP — auto-resolving any open incident"
+            curl -s -X POST https://events.pagerduty.com/v2/enqueue \
+              -H "Content-Type: application/json" \
+              -d '{
+                "routing_key": "${{ secrets.PD_ROUTING_KEY }}",
+                "event_action": "resolve",
+                "dedup_key": "'"$DEDUP_KEY"'"
+              }'
+          fi
