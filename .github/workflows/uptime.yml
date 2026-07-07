@@ -11,12 +11,12 @@ jobs:
     steps:
       - name: Check website and notify PagerDuty
         run: |
-          STATUS=$(curl -o /dev/null -s -w "%{http_code}" "${{ secrets.WEBSITE_URL }}")
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" --max-time 10 "${{ secrets.WEBSITE_URL }}" || echo "000")
           echo "Status code: $STATUS"
 
           DEDUP_KEY="website-monitor-main"
 
-          if [ "$STATUS" -ne 200 ]; then
+          if [ "$STATUS" != "200" ]; then
             echo "Site appears DOWN — triggering PagerDuty incident"
             curl -s -X POST https://events.pagerduty.com/v2/enqueue \
               -H "Content-Type: application/json" \
