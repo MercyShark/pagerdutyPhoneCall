@@ -8,40 +8,34 @@ on:
 permissions:
   contents: read
   packages: write
-
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
-
+  
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Login to GitHub Container Registry
+      - name: Set image name
+        run: |
+          echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Print image name
+        run: |
+          echo "Image is $IMAGE_NAME"
+
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }} 
 
-      - name: Printing Image Metadata
-        run: |
-          echo "Image Name: ${{ steps.meta.outputs.image }}"
-          echo "Tags: ${{ steps.meta.outputs.tags }}"
-      # - name: Build and Push Docker Image
-      #   uses: docker/build-push-action@v6
-      #   with:
-      #     context: .
-      #     push: true
-      #     tags: |
-      #       ${{ env.IMAGE_NAME }}:latest
-      #       ${{ env.IMAGE_NAME }}:${{ github.sha }}
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
