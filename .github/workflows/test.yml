@@ -1,0 +1,19 @@
+name: Testing workflow
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print GitHub Actor
+        run: |
+          echo "${{ github.actor }}"
+          echo "${{ github.repository }}"
+          echo "${{ secrets.GITHUB_TOKEN }}"
+        
