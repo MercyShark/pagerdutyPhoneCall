@@ -1,6 +1,10 @@
 name: Testing workflow
 
 on:
+  push:
+    branches: 
+      - main
+      
   workflow_dispatch:
 
 permissions:
